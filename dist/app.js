@@ -5,8 +5,8 @@ const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerC
 const date=n=>(n.approx?'c. ':'')+(n.year<0?Math.abs(n.year)+' BCE':n.year+' CE');
 const dMap=new Map(discoveries.map(n=>[n.id,n])),pMap=new Map(people.map(n=>[n.id,n]));
 const palette={Electricity:'#376454',Atoms:'#547e88',Quantum:'#846946',Radioactivity:'#a16b55',Genetics:'#806581',Mathematics:'#705b76',Astronomy:'#536f8b',Mechanics:'#88694a',Computing:'#367679',Medicine:'#975a51',Biology:'#5e7950',Chemistry:'#927235','Earth science':'#7c6950',Climate:'#467b75',Engineering:'#777257'};
-let widerNetwork=true,networkView='all';
-let mode='discoveries',selected='gravity',zoom=.85,journey=null,step=0,limit=24,storyCategory='All stories',lastReaderTrigger=null,storyLimit=6;
+let widerNetwork=false,networkView='focus';
+let mode='people',selected='raman',zoom=.85,journey=null,step=0,limit=24,storyCategory='All stories',lastReaderTrigger=null,storyLimit=6;
 const symmetric=e=>['Collaboration','Rivalry','Debate','Context','Shared milestone','Connected ideas','Correspondence'].includes(e[2]);
 function nodes(){return mode==='people'?people:discoveries}
 function edges(){return mode==='people'?peopleEdges:discoveryEdges}
@@ -44,6 +44,7 @@ const nightPalette={Electricity:'#7fbda0',Atoms:'#8bcee0',Quantum:'#d6b579',Radi
 function renderConstellation(list,links,focus){
  if(!constellation)constellation=new ScienceConstellation($('#map'));
  constellation.mount({list,links,selected,focus,wider:widerNetwork,mode,escape:esc,date,symmetric,colors:nightPalette,visual:n=>nodeVisual(n),asset:key=>visualAssets[key]?.src,onSelect:id=>{selectNode(id);$('#detail').scrollTop=0},onFocus:id=>{selected=id;networkView=networkView==='all'?'focus':'all';widerNetwork=false;render()}});
+ $('#count').textContent=`${constellation.ns.length} ${mode==='people'?'scientists':'milestones'} · ${constellation.ls.length} connections ${focus?'in this thread':'in the atlas'}`;
 }
 function renderOverview(list,links){renderConstellation(list,links,false)}
 function renderNetwork(list,links){renderConstellation(list,links,true)}
