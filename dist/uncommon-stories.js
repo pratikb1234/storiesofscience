@@ -1374,16 +1374,143 @@ for (const milestone of uncommonMilestones) for (const id of milestone.people) {
  const person = people.find(p => p.id === id);
  if (!person.contributions.includes(milestone.id)) person.contributions.push(milestone.id);
 }
+// Verified historical photographs, period portraits and original documents.
+const historicalStoryImages = {
+  "gold": {
+    "src": "images/uncommon-gold.svg",
+    "width": 280,
+    "height": 396,
+    "alt": "George de Hevesy, 1943. A Nobel Foundation portrait taken three years after the medals were dissolved.",
+    "caption": "George de Hevesy, 1943. A Nobel Foundation portrait taken three years after the medals were dissolved.",
+    "credit": "Nobel Foundation Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:Hevesy.jpg",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Hevesy.jpg"
+  },
+  "purple": {
+    "src": "images/uncommon-purple.svg",
+    "width": 941,
+    "height": 1200,
+    "alt": "William Henry Perkin, 1906. A later photograph of the chemist who discovered mauveine in 1856.",
+    "caption": "William Henry Perkin, 1906. A later photograph of the chemist who discovered mauveine in 1856.",
+    "credit": "Unknown authorUnknown author Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:William_Henry_Perkin.jpg",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:William_Henry_Perkin.jpg"
+  },
+  "fossil": {
+    "src": "images/uncommon-fossil.svg",
+    "width": 928,
+    "height": 1200,
+    "alt": "Mary Anning in a painted portrait made before 1842, attributed to Mr Grey. This is a historical painting, not a photograph.",
+    "caption": "Mary Anning in a painted portrait made before 1842, attributed to Mr Grey. This is a historical painting, not a photograph.",
+    "credit": "Credited to 'Mr. Grey' in Crispin Tickell's book 'Mary Anning of Lyme Regis' (1996) Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:Mary_Anning_painting.jpg",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Mary_Anning_painting.jpg"
+  },
+  "hearts": {
+    "src": "images/uncommon-hearts.svg",
+    "width": 280,
+    "height": 396,
+    "alt": "Otto Loewi, photographed by Albert Hilscher in 1936. A later portrait of the researcher behind the 1921 experiment.",
+    "caption": "Otto Loewi, photographed by Albert Hilscher in 1936. A later portrait of the researcher behind the 1921 experiment.",
+    "credit": "Albert Hilscher Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:Otto_Loewi_nobel.jpg",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Otto_Loewi_nobel.jpg"
+  },
+  "neutrons": {
+    "src": "images/uncommon-neutrons.svg",
+    "width": 971,
+    "height": 1200,
+    "alt": "Enrico Fermi, photographed between 1943 and 1949. A later portrait, not a photograph of the 1934 paraffin experiment.",
+    "caption": "Enrico Fermi, photographed between 1943 and 1949. A later portrait, not a photograph of the 1934 paraffin experiment.",
+    "credit": "Department of Energy-Office of Public Affairs, restored by Yann Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:Enrico_Fermi_1943-49.jpg",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Enrico_Fermi_1943-49.jpg"
+  },
+  "drawer": {
+    "src": "images/uncommon-drawer.svg",
+    "width": 528,
+    "height": 632,
+    "alt": "Henri Becquerel in a portrait reproduced in Practical Physics by Millikan and Gale, 1920. Not a photograph of the drawer experiment.",
+    "caption": "Henri Becquerel in a portrait reproduced in Practical Physics by Millikan and Gale, 1920. Not a photograph of the drawer experiment.",
+    "credit": "Photographer unidentified. Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:Antoine-henri-becquerel.jpg",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Antoine-henri-becquerel.jpg"
+  },
+  "waves": {
+    "src": "images/uncommon-waves.svg",
+    "width": 257,
+    "height": 388,
+    "alt": "Arno Penzias photographed by Willy Pragher in 1982, years after the cosmic microwave background discovery.",
+    "caption": "Arno Penzias photographed by Willy Pragher in 1982, years after the cosmic microwave background discovery.",
+    "credit": "Willy Pragher Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:32._Tagung_1982_Physiker;_Beim_Studentenabend_Arno_A._Penzias_-_W134Nr.119142_-_Willy_Pragher_(cropped).jpg",
+    "license": "CC BY 3.0 de",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/de/deed.en"
+  },
+  "layers": {
+    "src": "images/uncommon-layers.svg",
+    "width": 902,
+    "height": 1200,
+    "alt": "Andre Geim photographed by Bengt Oberger in 2018. This is a later portrait, not an image of the levitating frog experiment.",
+    "caption": "Andre Geim photographed by Bengt Oberger in 2018. This is a later portrait, not an image of the levitating frog experiment.",
+    "credit": "Bengt Oberger Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:Andre_Geim_10.jpg",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0"
+  },
+  "leaf": {
+    "src": "images/uncommon-leaf.svg",
+    "width": 803,
+    "height": 1200,
+    "alt": "Tu Youyou photographed by Bengt Nyman in December 2015, decades after the artemisinin research.",
+    "caption": "Tu Youyou photographed by Bengt Nyman in December 2015, decades after the artemisinin research.",
+    "credit": "Bengt Nyman from Vaxholm, Sweden Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:D810_4987_Tu_Youyou,_medicine_(22945001843)_(cropped).jpg",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "lens": {
+    "src": "images/uncommon-lens.svg",
+    "width": 1012,
+    "height": 1200,
+    "alt": "Antonie van Leeuwenhoek in a period portrait by Jan Verkolje, circa 1680 to 1686. Collection of the Rijksmuseum.",
+    "caption": "Antonie van Leeuwenhoek in a period portrait by Jan Verkolje, circa 1680 to 1686. Collection of the Rijksmuseum.",
+    "credit": "Jan Verkolje Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:Anthonie_van_Leeuwenhoek_(1632-1723)._Natuurkundige_te_Delft_Rijksmuseum_SK-A-957.jpeg",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Anthonie_van_Leeuwenhoek_(1632-1723)._Natuurkundige_te_Delft_Rijksmuseum_SK-A-957.jpeg"
+  },
+  "map": {
+    "src": "images/uncommon-map.svg",
+    "width": 850,
+    "height": 67,
+    "alt": "Alfred Sturtevant’s original genetic linkage map, published in 1913. A reproduction of the historical figure, not a modern explanatory diagram.",
+    "caption": "Alfred Sturtevant’s original genetic linkage map, published in 1913. A reproduction of the historical figure, not a modern explanatory diagram.",
+    "credit": "Alfred Sturtevant Via Wikimedia Commons. Resized for display; no generative alterations.",
+    "source": "https://commons.wikimedia.org/wiki/File:First_genetic_map_(Sturtevant,_1913).png",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:First_genetic_map_(Sturtevant,_1913).png"
+  },
+  "cylinder": {
+    "src": "images/uncommon-cylinder.svg",
+    "width": 817,
+    "height": 1200,
+    "alt": "First page of Roy J. Plunkett’s US patent 2,230,654, issued 4 February 1941. An original document following the 1938 PTFE discovery.",
+    "caption": "First page of Roy J. Plunkett’s US patent 2,230,654, issued 4 February 1941. An original document following the 1938 PTFE discovery.",
+    "credit": "Roy J. Plunkett / United States Patent Office. Scan via Google Patents. First page rendered for display.",
+    "source": "https://patents.google.com/patent/US2230654A/en",
+    "license": "Public patent document",
+    "licenseUrl": "https://patents.google.com/patent/US2230654A/en"
+  }
+};
 for (const story of uncommonNarratives) {
- const key = 'uncommon-' + story.art;
- visualAssets[key] = {
-  src: 'images/' + key + '.svg', width: 1200, height: 720,
-  alt: story.illustrationAlt,
-  caption: story.illustrationCaption,
-  credit: 'Original explanatory diagram for Stories of Science. Not an archival image or measured dataset.',
-  source: 'https://github.com/pratikb1234/storiesofscience/blob/main/dist/images/' + key + '.svg',
-  license: 'Original site artwork',
-  licenseUrl: 'https://github.com/pratikb1234/storiesofscience'
- };
+ const key = "uncommon-" + story.art;
+ visualAssets[key] = historicalStoryImages[story.art];
  storyVisuals[story.id] = {hero:key,chapters:{}};
 }
