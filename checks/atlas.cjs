@@ -25,6 +25,9 @@ for(const s of Object.values(sources))if(!s[1].startsWith('https://'))throw Erro
 const get=id=>globalIds.get(id);
 assert(!get('atlas-stats'));
 assert(get('map').innerHTML.includes('overview-network'));
+assert(get('map').innerHTML.includes('visible-name'));
+for(let i=0;i<5;i++)get('zoom-in').onclick();assert(run('zoom')>3);assert(get('map').innerHTML.includes('font-size:'));
+get('fit-map').onclick();assert(run('zoom')===.85);assert(get('map').scrollLeft===0);
 get('network-depth').onclick();assert(run("networkView==='focus' && widerNetwork"));
 get('network-depth').onclick();assert(run('!widerNetwork'));
 get('network-depth').onclick();assert(run("networkView==='all'"));
