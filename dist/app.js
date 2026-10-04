@@ -30,7 +30,7 @@ $$('[data-mode]').forEach(b=>{const active=b.dataset.mode===mode;b.classList.tog
 $('#count').textContent=`${list.length} ${mode==='people'?'scientists':'milestones'} · ${links.length} mapped connections in these results`;
 $('#map-caption').textContent=mode==='timeline'?'CHRONOLOGY OF SELECTED MILESTONES':networkView==='all'?'THE COMPLETE NETWORK':'CONNECTIONS AROUND YOUR SELECTION';
 $('#browse-title').textContent=mode==='people'?'Browse scientists':'Browse discoveries';$('#browse-note').textContent=mode==='people'?'Dates show the first contribution mapped here, not birth.':'Select a card to centre its connections.';
-$('#fit-map').disabled=mode==='timeline';$('#network-depth').disabled=mode==='timeline';$('#network-depth').textContent=networkView==='all'?'All connections':widerNetwork?'Wider network':'Direct connections';$('#network-depth').setAttribute('aria-pressed',widerNetwork);$('#zoom-in').disabled=mode==='timeline';$('#zoom-out').disabled=mode==='timeline';
+$('#fit-map').disabled=mode==='timeline';$('#network-depth').disabled=mode==='timeline';$('#network-depth').textContent=networkView==='all'?'Focus on selection':widerNetwork?'Whole atlas':'Expand this thread';$('#network-depth').setAttribute('aria-pressed',widerNetwork);$('#zoom-in').disabled=mode==='timeline';$('#zoom-out').disabled=mode==='timeline';
 $('#catalogue').innerHTML=mode==='timeline'?'':list.slice(0,limit).map(card).join('');$('.browse-head').hidden=mode==='timeline';$('#load-more').hidden=mode==='timeline'||limit>=list.length;$('#load-more').textContent=`Show more (${Math.max(0,list.length-limit)} remaining)`;
 if(!list.length){$('#map').innerHTML='<div class="empty"><h3>No matches in this view.</h3><p>Try a broader search, another era or All relationships.</p><button data-clear>Clear filters</button></div>'}
 else if(mode==='timeline'){$('#map').innerHTML='<div class="timeline">'+list.map(n=>`<button data-node="${esc(n.id)}" class="${n.id===selected?'active':''}"><span>${esc(date(n))}</span><div><strong>${esc(n.title)}</strong><small>${esc(n.field)} · ${esc(n.people.map(id=>pMap.get(id).title).join(', ')||'Collective achievement')}</small></div></button>`).join('')+'</div>'}
@@ -39,50 +39,14 @@ renderDetail();bindNodeButtons($('#explore'));
 const clear=$('[data-clear]');if(clear)clear.onclick=()=>{clearFilters();render()};
 }
 function wrap(text,max=29){let lines=[''];for(const word of text.split(' ')){let i=lines.length-1;if(lines[i]&&(lines[i]+' '+word).length>max)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word}return lines}
-const overviewCache=new Map();
-function renderOverview(list,links){
- const canvas=$('#map'),W=Math.max(960,canvas.clientWidth||930),H=900,cacheKey=(canvas.clientWidth||930)+':'+mode+':'+$('#relation').value+':'+list.map(n=>n.id).join(',');let positions=overviewCache.get(cacheKey);
- const groups=[...new Set(list.map(n=>n.field))];
- const columns=groups.length>6?4:Math.min(3,groups.length),rows=Math.ceil(groups.length/columns),cw=(W-48)/columns,ch=(H-48)/rows;
- if(!positions){
- positions=new Map();
- // Keep subjects in stable neighbourhoods; pack each neighbourhood without hard boundary piles.
-
- groups.forEach((field,g)=>{
- const members=list.filter(n=>n.field===field);
- const cx=24+(g%columns+.5)*cw,cy=24+(Math.floor(g/columns)+.59)*ch;
- members.forEach((n,i)=>{const angle=i*2.399963,r=Math.sqrt((i+.5)/members.length);positions.set(n.id,{x:cx+Math.cos(angle)*r*cw*.35,y:cy+Math.sin(angle)*r*ch*.29})});
- });
- overviewCache.set(cacheKey,positions);
- }
- const neighbours=new Set([selected,...links.filter(e=>e[0]===selected||e[1]===selected).flatMap(e=>e.slice(0,2))]);
- const fit=(canvas.clientWidth||930)/W,scale=fit*zoom/.85;
- const labelSize=12/scale,degree=new Map(list.map(n=>[n.id,0]));
- links.forEach(e=>{degree.set(e[0],degree.get(e[0])+1);degree.set(e[1],degree.get(e[1])+1)});
- const labels=new Set(),boxes=[];
- const ranked=[...list].sort((a,b)=>(b.id===selected)-(a.id===selected)||Number(neighbours.has(b.id))-Number(neighbours.has(a.id))||degree.get(b.id)-degree.get(a.id));
- const labelGeometry=n=>{const p=positions.get(n.id),left=p.x>W*.72,text=n.title.length>42?n.title.slice(0,39)+'…':n.title,w=text.length*7.6/scale;return {x:left?p.x-12/scale-w:p.x+12/scale,y:p.y-17/scale,w,h:15/scale,left,text}};
- for(const n of ranked){if(n.id!==selected&&zoom<1.7)continue;const box=labelGeometry(n);if(box.x<12/scale||box.x+box.w>W-12/scale)continue;if(n.id===selected||!boxes.some(b=>box.x<b.x+b.w+8/scale&&box.x+box.w+8/scale>b.x&&box.y<b.y+b.h+5/scale&&box.y+box.h+5/scale>b.y)){labels.add(n.id);boxes.push(box)}}
- let svg=`<svg class="overview-network" xmlns="http://www.w3.org/2000/svg" width="${W*scale}" height="${H*scale}" viewBox="0 0 ${W} ${H}" role="group" aria-label="All ${list.length} ${mode==='people'?'scientists':'discoveries'} and ${links.length} connections">`;
- groups.forEach((field,g)=>{const x=24+(g%columns)*cw,y=24+Math.floor(g/columns)*ch;svg+=`<rect x="${x+5}" y="${y+5}" width="${cw-10}" height="${ch-10}" rx="12" fill="${palette[field]||'#376454'}" fill-opacity=".035" stroke="#dfe3d8" stroke-width="1"/><text x="${x+18}" y="${y+30}" style="font:600 13px Arial;letter-spacing:.3px" fill="${palette[field]||'#376454'}">${esc(field)}</text>`;});
- for(const e of [...links].sort((a,b)=>Number(a[0]===selected||a[1]===selected)-Number(b[0]===selected||b[1]===selected))){const a=positions.get(e[0]),b=positions.get(e[1]),active=e[0]===selected||e[1]===selected,context=['Shared milestone','Connected ideas','Context','Background'].includes(e[2]);svg+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${active?'#a05a3c':context?'#89958c':'#527b6b'}" stroke-width="${active?2.3:1}" vector-effect="non-scaling-stroke" ${context?'stroke-dasharray="3 5"':e[2]==='Mentorship'?'stroke-dasharray="6 4"':''} opacity="${active?.85:context?.045:.12}"><title>${esc(e[2]+': '+e[3])}</title></line>`;}
- for(const n of [...list].sort((a,b)=>Number(a.id===selected)-Number(b.id===selected))){const p=positions.get(n.id),active=n.id===selected,box=labelGeometry(n);svg+=`<g class="overview-node" data-node="${esc(n.id)}" tabindex="0" role="button" aria-label="Explore ${esc(n.title)}" transform="translate(${p.x},${p.y})"><title>${esc(n.title)} · ${esc(date(n))} · ${esc(n.field)}</title><circle r="${12/scale}" fill="transparent"/><circle r="${(active?6:3.5)/scale}" fill="${palette[n.field]||'#376454'}" stroke="${active?'#a05a3c':'#f7f5ee'}" stroke-width="${active?2:1}" vector-effect="non-scaling-stroke"/><text class="overview-name ${labels.has(n.id)?'visible-name':''}" style="font-size:${labelSize}px;stroke-width:${3/scale}px" text-anchor="${box.left?'end':'start'}" x="${(box.left?-12:12)/scale}" y="${-7/scale}">${esc(box.text)}</text></g>`;}
- canvas.innerHTML=`<p class="network-note">Explore by subject. Select a dot to read its story and highlight connections. Zoom in for names, or choose Direct connections for a focused view.</p>`+svg+'</svg>';
+let constellation;
+const nightPalette={Electricity:'#7fbda0',Atoms:'#8bcee0',Quantum:'#d6b579',Radioactivity:'#e5a887',Genetics:'#d2a5dd',Mathematics:'#b8ade7',Astronomy:'#9bbbe5',Mechanics:'#d7b790',Computing:'#85d8d2',Medicine:'#eba6a1',Biology:'#a6cb85',Chemistry:'#d9cb86','Earth science':'#c2b08b',Climate:'#8bccc1',Engineering:'#bfbc9c'};
+function renderConstellation(list,links,focus){
+ if(!constellation)constellation=new ScienceConstellation($('#map'));
+ constellation.mount({list,links,selected,focus,wider:widerNetwork,mode,escape:esc,date,symmetric,colors:nightPalette,visual:n=>nodeVisual(n),asset:key=>visualAssets[key]?.src,onSelect:id=>{selectNode(id);$('#detail').scrollTop=0},onFocus:id=>{selected=id;networkView=networkView==='all'?'focus':'all';widerNetwork=false;render()}});
 }
-function renderNetwork(list,links){const map=nodeMap(),focus=map.get(selected);const nearby=links.filter(e=>e[0]===selected||e[1]===selected);const left=[],right=[];for(const e of nearby){const id=e[0]===selected?e[1]:e[0];const arr=e[1]===selected&&!symmetric(e)?left:right;if(!left.includes(id)&&!right.includes(id))arr.push(id)}
-const immediate=new Set([selected,...left,...right]),outerLeft=[],outerRight=[];
-if(widerNetwork)for(const e of links){let id=null,via=null;if(immediate.has(e[0])&&!immediate.has(e[1])){id=e[1];via=e[0]}else if(immediate.has(e[1])&&!immediate.has(e[0])){id=e[0];via=e[1]}if(id&&!outerLeft.includes(id)&&!outerRight.includes(id)&&outerLeft.length+outerRight.length<20)(left.includes(via)?outerLeft:outerRight).push(id)}
-const expanded=outerLeft.length+outerRight.length>0,w=expanded?1510:930,centre=expanded?755:465;
-const h=Math.max(330,Math.max(left.length,right.length,outerLeft.length,outerRight.length)*122+110),positions=new Map([[selected,{x:centre,y:h/2}]]);
-for(const [arr,x] of [[left,centre-310],[right,centre+310],[outerLeft,135],[outerRight,w-135]])arr.forEach((id,i)=>positions.set(id,{x,y:(h-(arr.length-1)*122)/2+i*122}));
-const shownLinks=links.filter(e=>positions.has(e[0])&&positions.has(e[1]));
-let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w*zoom}" height="${h*zoom}" viewBox="0 0 ${w} ${h}" role="group" aria-label="Connections for ${esc(focus.title)}"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8" fill="none" stroke="#6c8e7e"/></marker></defs>`;
-svg+=`<text class="column-label" x="${centre-310}" y="25" text-anchor="middle">EARLIER WORK & CONNECTIONS</text><text class="column-label" x="${centre+310}" y="25" text-anchor="middle">LATER WORK & SHARED THREADS</text>`;
-for(const e of shownLinks){const a=positions.get(e[0]),b=positions.get(e[1]);const dx=Math.sign(b.x-a.x)||1,x1=a.x+dx*119,x2=b.x-dx*123;svg+=`<path class="edge ${esc(e[2].toLowerCase().replaceAll(' ','-'))}" d="M ${x1} ${a.y} C ${(x1+x2)/2} ${a.y}, ${(x1+x2)/2} ${b.y}, ${x2} ${b.y}" ${symmetric(e)?'':'marker-end="url(#arrow)"'}><title>${esc(e[2]+': '+e[3])}</title></path>`;}
-for(const [id,pos] of positions){const n=map.get(id),lines=wrap(n.title);svg+=`<g class="node ${id===selected?'selected':''}" data-node="${esc(id)}" tabindex="0" role="button" aria-label="Explore ${esc(n.title)}" transform="translate(${pos.x-118},${pos.y-48})"><rect width="236" height="96" rx="4"/><rect width="3" height="96" style="fill:${palette[n.field]||'#376454'};stroke:none"/><text class="year" x="13" y="20">${esc(date(n))} · ${esc(n.field)}</text>${lines.slice(0,3).map((line,i)=>`<text class="title" x="13" y="${43+i*18}">${esc(line)}</text>`).join('')}</g>`}
-$('#map').innerHTML=`<p class="network-note">${nearby.length?`${nearby.length} immediate connections${expanded?`, plus ${outerLeft.length+outerRight.length} people or milestones one step further`:""}. Select a node to follow its network. Relationship descriptions and sources appear in the detail panel.`:'No direct relationship mapped yet. Explore the associated milestones and stories, or browse below.'}</p>`+svg+'</svg>';
-const canvas=$('#map');canvas.scrollLeft=Math.max(0,centre*zoom-canvas.clientWidth/2);canvas.scrollTop=Math.max(0,h*zoom/2-canvas.clientHeight/2);
-}
+function renderOverview(list,links){renderConstellation(list,links,false)}
+function renderNetwork(list,links){renderConstellation(list,links,true)}
 function bindNodeButtons(root){root.querySelectorAll('[data-node]').forEach(b=>{b.onclick=()=>{selectNode(b.dataset.node);$('#detail').scrollTop=0;if(innerWidth<760)$('#detail').scrollIntoView({behavior:'smooth',block:'start'})};if(b.tagName.toLowerCase()==='g')b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();b.onclick()}}})}
 function renderDetail(){const n=nodeMap().get(selected);if(!n){$('#detail').innerHTML='<h3>No selection</h3><p>Broaden the filters to explore more of the collection.</p>';return}const linked=edges().filter(e=>(e[0]===n.id||e[1]===n.id)&&relationMatch(e)),relatedStories=narratives.filter(s=>(mode==='people'?s.people:s.discoveries).includes(n.id));
 $('#detail').innerHTML=`<p class="eyebrow">${journey?`GUIDED ROUTE · ${step+1} / ${journey.ids.length}`:esc(n.field)}</p><h3>${esc(n.title)}</h3><div class="detail-year">${mode==='people'?'EARLIEST MAPPED CONTRIBUTION':'MILESTONE'} · ${esc(date(n))}</div><p class="place">${esc(n.location)}</p>${nodeVisual(n)?mediaFigure(nodeVisual(n),mode==='people'?'detail-portrait':'detail-event'): ''}<p>${esc(n.text)}</p><details class="detail-sources"><summary>Read the source</summary>${sourceLink(n.source)}</details>${journey?`<div class="story-nav"><button id="prev" ${step===0?'disabled':''}>Previous</button><button id="next" ${step===journey.ids.length-1?'disabled':''}>Next stop</button></div><button id="end" class="person-link">Exit guided route</button>`:''}${relatedStories.length?`<div class="detail-rule"><h4>THERE IS A STORY HERE</h4>${relatedStories.map(s=>`<button class="related story-link" data-narrative="${s.id}">${esc(s.title)}<small>${esc(s.category)} · Read the story</small></button>`).join('')}</div>`:''}
@@ -116,10 +80,19 @@ $('#story-filters').innerHTML=['All stories',...new Set(narratives.map(s=>s.cate
 $('#field').innerHTML='<option value="All">All subjects</option>'+[...new Set(discoveries.map(d=>d.field))].sort().map(f=>`<option>${esc(f)}</option>`).join('');
 $$('[data-mode]').forEach(b=>b.onclick=()=>{const nextMode=b.dataset.mode;journey=null;clearFilters();selected=nextMode==='people'?'faraday':mode==='people'?'gravity':selected;mode=nextMode;render()});
 $('#search').oninput=()=>{limit=24;journey=null;render()};for(const id of ['field','era','relation'])$('#'+id).onchange=()=>{limit=24;journey=null;render()};
-$('#network-depth').onclick=()=>{if(networkView==='all'){networkView='focus';widerNetwork=true}else if(widerNetwork){widerNetwork=false}else{networkView='all'}zoom=.85;render()};$('#fit-map').onclick=()=>{zoom=.85;render();$('#map').scrollLeft=0;$('#map').scrollTop=0};
-function changeZoom(factor){const canvas=$('#map'),before=zoom,cx=canvas.scrollLeft+(canvas.clientWidth||930)/2,cy=canvas.scrollTop+(canvas.clientHeight||520)/2;zoom=Math.min(5.1,Math.max(.425,zoom*factor));render();canvas.scrollLeft=Math.max(0,cx*zoom/before-(canvas.clientWidth||930)/2);canvas.scrollTop=Math.max(0,cy*zoom/before-(canvas.clientHeight||520)/2)}
-$('#zoom-in').onclick=()=>changeZoom(1.35);$('#zoom-out').onclick=()=>changeZoom(1/1.35);$('#reset').onclick=()=>{clearFilters();zoom=.85;journey=null;render()};$('#load-more').onclick=()=>{limit+=24;render()};
+$('#network-depth').onclick=()=>{if(networkView==='all'){networkView='focus';widerNetwork=false}else if(!widerNetwork){widerNetwork=true}else{networkView='all'}zoom=.85;render()};$('#fit-map').onclick=()=>{zoom=.85;constellation?.fit()};
+function changeZoom(factor){zoom=Math.min(5.1,Math.max(.425,zoom*factor));constellation?.zoom(factor)}
+$('#zoom-in').onclick=()=>changeZoom(1.35);$('#zoom-out').onclick=()=>changeZoom(1/1.35);$('#reset').onclick=()=>{clearFilters();zoom=.85;journey=null;networkView='all';render();constellation?.fit()};$('#load-more').onclick=()=>{limit+=24;render()};
 $('#journeys').innerHTML=stories.map((s,i)=>`<button class="journey" data-route="${i}"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="tag">${esc(s.tag)}</span><h3>${esc(s.title)}</h3><p>${esc(s.description)}</p><span class="open">Follow ${s.ids.length} stops</span></button>`).join('');$$('[data-route]').forEach(b=>b.onclick=()=>{clearFilters();journey=stories[+b.dataset.route];step=0;mode='discoveries';selected=journey.ids[0];render();$('#explore').scrollIntoView({behavior:'smooth'});$('#detail').scrollTop=0});
 
 function readHash(){const hash=decodeURIComponent(location.hash.slice(1));if(hash.startsWith('story='))openStory(hash.slice(6));else if(hash.startsWith('node=')){const [kind,id]=hash.slice(5).split('/');if((kind==='p'?pMap:dMap).has(id)){clearFilters();mode=kind==='p'?'people':'discoveries';selected=id;render();$('#explore').scrollIntoView()}}}
 renderStories();render();readHash();window.addEventListener('hashchange',readHash);
+
+
+const expandAtlas=document.createElement('button');expandAtlas.id='expand-atlas';expandAtlas.textContent='Expand atlas';$('.map-top>div').append(expandAtlas);
+function setAtlasExpanded(expanded){$('.atlas').classList.toggle('is-expanded',expanded);document.body.classList.toggle('atlas-expanded',expanded);expandAtlas.textContent=expanded?'Close expanded view':'Expand atlas';expandAtlas.setAttribute('aria-expanded',expanded);requestAnimationFrame(()=>{constellation?.resize();constellation?.fit();if(expanded)$('#map canvas')?.focus();else expandAtlas.focus()})}
+expandAtlas.onclick=()=>setAtlasExpanded(!$('.atlas').classList.contains('is-expanded'));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.atlas').classList.contains('is-expanded'))setAtlasExpanded(false)});
+const threadBar=document.createElement('div');threadBar.className='atlas-thread-bar';threadBar.innerHTML='<span>START WITH A THREAD</span><button data-thread="faraday">Faraday’s influence</button><button data-thread="raman">Raman’s circle</button><button data-thread="einstein">Einstein’s connections</button><button id="surprise-thread">Surprise me</button>';$('.atlas').before(threadBar);
+threadBar.querySelectorAll('[data-thread]').forEach(b=>b.onclick=()=>{clearFilters();networkView='focus';widerNetwork=false;selectNode(b.dataset.thread,'people')});
+$('#surprise-thread').onclick=()=>{clearFilters();const candidates=people.filter(n=>narratives.some(s=>s.people.includes(n.id))&&peopleEdges.some(e=>e[0]===n.id||e[1]===n.id));if(!candidates.length)return;networkView='focus';widerNetwork=false;selectNode(candidates[Math.floor(Math.random()*candidates.length)].id,'people')};
