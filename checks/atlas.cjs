@@ -32,7 +32,7 @@ get('network-depth').onclick();assert(run("networkView==='focus' && widerNetwork
 get('network-depth').onclick();assert(run('!widerNetwork'));
 get('network-depth').onclick();assert(run("networkView==='all'"));
 const modes=staticEls.filter(e=>e.dataset.mode);
-modes[1].onclick();assert(get('count').textContent.includes('362 scientists'));
+modes[1].onclick();assert(get('count').textContent.includes(run('people.length')+' scientists'));
 get('search').value='faraday';get('search').oninput();assert(run("filtered().some(n=>n.id==='faraday') && filtered().length<10"));
 get('search').value='no-such-scientist';get('search').oninput();assert(get('map').innerHTML.includes('No matches'));
 get('reset').onclick();get('relation').value='Mentorship';get('relation').onchange();assert(run('filtered().length')>25);

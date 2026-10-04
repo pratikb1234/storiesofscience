@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const context=vm.createContext({});
-vm.runInContext(['data','expanded','connections','narratives','atlas-additions','network-expansion','media','more-stories'].map(f=>fs.readFileSync(`dist/${f}.js`,'utf8')).join('\n')+'\nglobalThis.atlas={discoveries,people,discoveryEdges,peopleEdges,stories,narratives,sources,visualAssets,personVisuals,discoveryVisuals,storyVisuals}',context);
+vm.runInContext(['data','expanded','connections','narratives','atlas-additions','network-expansion','media','more-stories','uncommon-stories'].map(f=>fs.readFileSync(`dist/${f}.js`,'utf8')).join('\n')+'\nglobalThis.atlas={discoveries,people,discoveryEdges,peopleEdges,stories,narratives,sources,visualAssets,personVisuals,discoveryVisuals,storyVisuals}',context);
 const a=context.atlas;
 for(const [name,ns,es] of [['discoveries',a.discoveries,a.discoveryEdges],['people',a.people,a.peopleEdges]]){
  const ids=new Set(ns.map(n=>n.id));assert.equal(ids.size,ns.length,`Duplicate ${name} IDs`);
@@ -24,3 +24,10 @@ console.log('Image files, credits and featured story validated.');
 
 for(const s of a.narratives){const v=a.storyVisuals[s.id];assert(v,`Missing story image ${s.id}`);assert(v.hero||v.portraits?.length);for(const key of [v.hero,...(v.portraits||[]).map(p=>p.key),...Object.values(v.chapters||{})].filter(Boolean))assert(a.visualAssets[key],`Unknown story image ${key}`)}
 console.log('All stories have validated illustrations.');
+
+const storyIds=new Set();
+for(const s of a.narratives){
+ assert(!storyIds.has(s.id),`Duplicate story ID: ${s.id}`);storyIds.add(s.id);
+ for(const [heading,body,source] of s.more||[])assert(heading&&body&&a.sources[source],`Incomplete extended reading: ${s.id}`);
+}
+console.log('Unique story IDs and extended reading sources validated.');

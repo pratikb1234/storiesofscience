@@ -1,6 +1,6 @@
 # Stories of Science
 
-An illustrated collection of 25 historical science narratives, connected to an atlas of 219 milestones and 362 people.
+An illustrated collection of 37 historical science narratives, connected to an atlas of 228 milestones and 378 people.
 
 ## Run locally
 
@@ -27,3 +27,5 @@ All asset references are relative, so the site works under a repository path. St
 Narratives include reading sources and notes on historical uncertainty. Image metadata includes authorship, licence information and original source links. Individual image licences remain applicable.
 
 The network distinguishes recorded personal relationships from shared milestone and connected idea associations. An association between two scientists' work does not claim they met or collaborated.
+
+The `uncommon-stories.js` collection adds 12 sourced histories, including the dissolved Nobel medals. Each includes a historical caution, story specific extended reading, and a clearly labelled original explanatory diagram.
