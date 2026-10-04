@@ -41,31 +41,33 @@ const clear=$('[data-clear]');if(clear)clear.onclick=()=>{clearFilters();render(
 function wrap(text,max=29){let lines=[''];for(const word of text.split(' ')){let i=lines.length-1;if(lines[i]&&(lines[i]+' '+word).length>max)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word}return lines}
 const overviewCache=new Map();
 function renderOverview(list,links){
- const canvas=$('#map'),W=1500,H=1000,cacheKey=mode+':'+$('#relation').value+':'+list.map(n=>n.id).join(',');let positions=overviewCache.get(cacheKey);
+ const canvas=$('#map'),W=Math.max(960,canvas.clientWidth||930),H=900,cacheKey=(canvas.clientWidth||930)+':'+mode+':'+$('#relation').value+':'+list.map(n=>n.id).join(',');let positions=overviewCache.get(cacheKey);
  const groups=[...new Set(list.map(n=>n.field))];
+ const columns=groups.length>6?4:Math.min(3,groups.length),rows=Math.ceil(groups.length/columns),cw=(W-48)/columns,ch=(H-48)/rows;
  if(!positions){
  positions=new Map();
  // Keep subjects in stable neighbourhoods; pack each neighbourhood without hard boundary piles.
- const columns=groups.length>6?5:Math.min(3,groups.length),rows=Math.ceil(groups.length/columns);
+
  groups.forEach((field,g)=>{
- const members=list.filter(n=>n.field===field),cw=(W-100)/columns,ch=(H-120)/rows;
- const cx=50+(g%columns+.5)*cw,cy=75+(Math.floor(g/columns)+.5)*ch;
- members.forEach((n,i)=>{const angle=i*2.399963,r=Math.sqrt((i+.5)/members.length);positions.set(n.id,{x:cx+Math.cos(angle)*r*cw*.38,y:cy+Math.sin(angle)*r*ch*.35})});
+ const members=list.filter(n=>n.field===field);
+ const cx=24+(g%columns+.5)*cw,cy=24+(Math.floor(g/columns)+.59)*ch;
+ members.forEach((n,i)=>{const angle=i*2.399963,r=Math.sqrt((i+.5)/members.length);positions.set(n.id,{x:cx+Math.cos(angle)*r*cw*.35,y:cy+Math.sin(angle)*r*ch*.29})});
  });
  overviewCache.set(cacheKey,positions);
  }
  const neighbours=new Set([selected,...links.filter(e=>e[0]===selected||e[1]===selected).flatMap(e=>e.slice(0,2))]);
- const fit=Math.min((canvas.clientWidth||930)/W,((canvas.clientHeight||520)-58)/H),scale=fit*zoom/.85;
+ const fit=(canvas.clientWidth||930)/W,scale=fit*zoom/.85;
  const labelSize=12/scale,degree=new Map(list.map(n=>[n.id,0]));
  links.forEach(e=>{degree.set(e[0],degree.get(e[0])+1);degree.set(e[1],degree.get(e[1])+1)});
  const labels=new Set(),boxes=[];
  const ranked=[...list].sort((a,b)=>(b.id===selected)-(a.id===selected)||Number(neighbours.has(b.id))-Number(neighbours.has(a.id))||degree.get(b.id)-degree.get(a.id));
- const labelGeometry=n=>{const p=positions.get(n.id),left=p.x>W*.72,text=n.title.length>42?n.title.slice(0,39)+'…':n.title,w=text.length*6.2/scale;return {x:left?p.x-12/scale-w:p.x+12/scale,y:p.y-17/scale,w,h:15/scale,left,text}};
- for(const n of ranked){const box=labelGeometry(n);if(n.id===selected||!boxes.some(b=>box.x<b.x+b.w+8/scale&&box.x+box.w+8/scale>b.x&&box.y<b.y+b.h+5/scale&&box.y+box.h+5/scale>b.y)){labels.add(n.id);boxes.push(box)}}
+ const labelGeometry=n=>{const p=positions.get(n.id),left=p.x>W*.72,text=n.title.length>42?n.title.slice(0,39)+'…':n.title,w=text.length*7.6/scale;return {x:left?p.x-12/scale-w:p.x+12/scale,y:p.y-17/scale,w,h:15/scale,left,text}};
+ for(const n of ranked){if(n.id!==selected&&zoom<1.7)continue;const box=labelGeometry(n);if(box.x<12/scale||box.x+box.w>W-12/scale)continue;if(n.id===selected||!boxes.some(b=>box.x<b.x+b.w+8/scale&&box.x+box.w+8/scale>b.x&&box.y<b.y+b.h+5/scale&&box.y+box.h+5/scale>b.y)){labels.add(n.id);boxes.push(box)}}
  let svg=`<svg class="overview-network" xmlns="http://www.w3.org/2000/svg" width="${W*scale}" height="${H*scale}" viewBox="0 0 ${W} ${H}" role="group" aria-label="All ${list.length} ${mode==='people'?'scientists':'discoveries'} and ${links.length} connections">`;
- for(const e of [...links].sort((a,b)=>Number(a[0]===selected||a[1]===selected)-Number(b[0]===selected||b[1]===selected))){const a=positions.get(e[0]),b=positions.get(e[1]),active=e[0]===selected||e[1]===selected,context=['Shared milestone','Connected ideas','Context','Background'].includes(e[2]);svg+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${active?'#a05a3c':context?'#89958c':'#527b6b'}" stroke-width="${active?2.3:1}" vector-effect="non-scaling-stroke" ${context?'stroke-dasharray="3 5"':e[2]==='Mentorship'?'stroke-dasharray="6 4"':''} opacity="${active?1:context?.36:.52}"><title>${esc(e[2]+': '+e[3])}</title></line>`;}
+ groups.forEach((field,g)=>{const x=24+(g%columns)*cw,y=24+Math.floor(g/columns)*ch;svg+=`<rect x="${x+5}" y="${y+5}" width="${cw-10}" height="${ch-10}" rx="12" fill="${palette[field]||'#376454'}" fill-opacity=".035" stroke="#dfe3d8" stroke-width="1"/><text x="${x+18}" y="${y+30}" style="font:600 13px Arial;letter-spacing:.3px" fill="${palette[field]||'#376454'}">${esc(field)}</text>`;});
+ for(const e of [...links].sort((a,b)=>Number(a[0]===selected||a[1]===selected)-Number(b[0]===selected||b[1]===selected))){const a=positions.get(e[0]),b=positions.get(e[1]),active=e[0]===selected||e[1]===selected,context=['Shared milestone','Connected ideas','Context','Background'].includes(e[2]);svg+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${active?'#a05a3c':context?'#89958c':'#527b6b'}" stroke-width="${active?2.3:1}" vector-effect="non-scaling-stroke" ${context?'stroke-dasharray="3 5"':e[2]==='Mentorship'?'stroke-dasharray="6 4"':''} opacity="${active?.85:context?.045:.12}"><title>${esc(e[2]+': '+e[3])}</title></line>`;}
  for(const n of [...list].sort((a,b)=>Number(a.id===selected)-Number(b.id===selected))){const p=positions.get(n.id),active=n.id===selected,box=labelGeometry(n);svg+=`<g class="overview-node" data-node="${esc(n.id)}" tabindex="0" role="button" aria-label="Explore ${esc(n.title)}" transform="translate(${p.x},${p.y})"><title>${esc(n.title)} · ${esc(date(n))} · ${esc(n.field)}</title><circle r="${12/scale}" fill="transparent"/><circle r="${(active?6:3.5)/scale}" fill="${palette[n.field]||'#376454'}" stroke="${active?'#a05a3c':'#f7f5ee'}" stroke-width="${active?2:1}" vector-effect="non-scaling-stroke"/><text class="overview-name ${labels.has(n.id)?'visible-name':''}" style="font-size:${labelSize}px;stroke-width:${3/scale}px" text-anchor="${box.left?'end':'start'}" x="${(box.left?-12:12)/scale}" y="${-7/scale}">${esc(box.text)}</text></g>`;}
- canvas.innerHTML=`<p class="network-note">Select a name to trace its connections. Zoom in to reveal more labels. Scroll to move around the enlarged map.</p>`+svg+'</svg>';
+ canvas.innerHTML=`<p class="network-note">Explore by subject. Select a dot to read its story and highlight connections. Zoom in for names, or choose Direct connections for a focused view.</p>`+svg+'</svg>';
 }
 function renderNetwork(list,links){const map=nodeMap(),focus=map.get(selected);const nearby=links.filter(e=>e[0]===selected||e[1]===selected);const left=[],right=[];for(const e of nearby){const id=e[0]===selected?e[1]:e[0];const arr=e[1]===selected&&!symmetric(e)?left:right;if(!left.includes(id)&&!right.includes(id))arr.push(id)}
 const immediate=new Set([selected,...left,...right]),outerLeft=[],outerRight=[];
